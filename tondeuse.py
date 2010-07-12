@@ -148,4 +148,4 @@ if __name__ == '__main__':
         init()
         mow_lawn()
     except:
-        stdout.write('\x1b[?25h')
+        stdout.write('\x1b[?25h\x1b[H\x1b[2J')
