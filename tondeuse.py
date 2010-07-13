@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # configuration here for maximum user friendship
-delay = 0.5    # time in seconds to mow a ;
+delay = 0.005    # time in seconds to mow a ;
 colors = True # true or false, no color themes yet
-miss_percentage = 1 # percentage of grass that the mower will not cut properly
+miss_percentage = .3 # percentage of grass that the mower will not cut properly
 
 from random import randint
 from sys import stdout
@@ -147,5 +147,5 @@ if __name__ == '__main__':
     try:
         init()
         mow_lawn()
-    except:
-        stdout.write('\x1b[?25h\x1b[H\x1b[2J')
+    finally:
+        stdout.write('\x1b[0m\x1b[?25h\x1b[H\x1b[2J')
