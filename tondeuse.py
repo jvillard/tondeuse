@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # configuration here for maximum user friendship
-delay = 0.5    # time in seconds to mow a ;
+slow_delay = 0.5    # time in seconds to mow a ; in slow mode (default mode)
+speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
+delay = slow_delay
 colors = True # true or false, no color themes yet
 miss_percentage = 1 # percentage of grass that the mower will not cut properly
 
+import curses
 from random import randint
 from sys import stdout
 from time import sleep
@@ -25,127 +28,170 @@ def restore_cursor(): stdout.write('\x1b[u')
 def cursor_left(): stdout.write('\x1b[D')
 def cursor_down(): stdout.write('\x1b[B')
 
-def right_mower(i=4):
-    if not colors:
-        mower = '`.=.'[max(0,4-i):garden_w + 4 - i]
-    elif i >= 4 and i <= garden_w:
-        mower = '\x1b[0m`.\x1b[1;31m=\x1b[0m.'
-    elif i == garden_w + 1:
-        mower = '\x1b[0m`.\x1b[1;31m='
-    elif i == garden_w + 2:
-        mower = '\x1b[0m`.'
-    elif i == garden_w + 3:
-        mower = '\x1b[0m`'
-    elif i == garden_w + 4 or i == 0:
-        mower = ''
-    elif i == 1:
-        mower = '\x1b[0m.'
-    elif i == 2:
-        mower = '\x1b[1;31m=\x1b[0m.'
-    elif i == 3:
-        mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.'
-    stdout.write(mower)
 
-def left_mower(i=4):
-    if i >= 4 and i <= garden_w:
-        if not colors:
-            mower = '.=.’'
-        else:
-            mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.’'
-    elif i == garden_w + 1:
-        if not colors:
-            mower = '=.’'
-        else:
-            mower = '\x1b[1;31m=\x1b[0m.’'
-    elif i == garden_w + 2:
-        if not colors:
-            mower = '.’'
-        else:
-            mower = '\x1b[0m.’'
-    elif i == garden_w + 3:
-        if not colors:
-            mower = '’'
-        else:
-            mower = '\x1b[0m’'
-    elif i == garden_w + 4 or i == 0:
-        mower = ''
-    elif i == 1:
-        if not colors:
-            mower = '.'
-        else:
+class lawn:
+    def __init__(self,slow_delay,speedy_delay,colors,miss_percentage):
+        self.slow_delay = slow_delay
+        self.speedy_delay = speedy_delay
+        self.delay = slow_delay
+        self.colors = colors
+        self.miss_percentage = miss_percentage
+
+        (self.garden_w, self.garden_h) = terminal_size()
+        self.mower_size = 4
+
+        self.uncut_grass = ';'
+        if self.colors:
+            self.uncut_grass = '\x1b[1;32m' + self.uncut_grass
+
+        self.grass = ','
+        if self.colors:
+            self.grass = '\x1b[0;32m' + self.grass
+        
+        # init curses
+        self.scr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        self.scr.nodelay(True)
+        stdout.flush()
+        
+        # print entire, untrimmed garden and return to top-left corner and save position
+        stdout.write('\x1b[?25l') # no cursor
+        stdout.write('\x1b[H\x1b[2J') # wipe out screen
+        stdout.write(self.uncut_grass)
+        # replaces stdout.write((self.uncut_grass * self.garden_w)*self.garden_h)
+        # which mysteriously doesn't work with curses
+        self.scr.bkgd(ord(';'),curses.COLOR_GREEN)
+        home()
+        save_cursor()
+        stdout.flush()
+
+
+    def deinit(self):
+        curses.endwin()
+        stdout.write('\x1b[?25h')
+
+
+    def right_mower(self,i=4):
+        if not self.colors:
+            mower = '`.=.'[max(0,4-i):self.garden_w + 4 - i]
+        elif i >= 4 and i <= self.garden_w:
+            mower = '\x1b[0m`.\x1b[1;31m=\x1b[0m.'
+        elif i == self.garden_w + 1:
+            mower = '\x1b[0m`.\x1b[1;31m='
+        elif i == self.garden_w + 2:
+            mower = '\x1b[0m`.'
+        elif i == self.garden_w + 3:
+            mower = '\x1b[0m`'
+        elif i == self.garden_w + 4 or i == 0:
+            mower = ''
+        elif i == 1:
             mower = '\x1b[0m.'
-    elif i == 2:
-        if not colors:
-            mower = '.='
-        else:
-            mower = '\x1b[0m.\x1b[1;31m='
-    elif i == 3:
-        if not colors:
-            mower = '.=.'
-        else:
+        elif i == 2:
+            mower = '\x1b[1;31m=\x1b[0m.'
+        elif i == 3:
             mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.'
-    stdout.write(mower)
+        stdout.write(mower)
 
-mower_size = 4
-
-uncut_grass = ';'
-if colors:
-    uncut_grass = '\x1b[1;32m' + uncut_grass
-
-grass = ','
-if colors:
-    grass = '\x1b[0;32m' + grass
-
-def cut_grass():
-    if miss_percentage == 0 or randint(0,100) > miss_percentage:
-        g = grass
-    else:
-        g = uncut_grass
-    stdout.write(g)
-
-
-(garden_w, garden_h) = terminal_size()
-
-def init():
-    # print entire, untrimmed garden and return to top-left corner and save position
-    stdout.write('\x1b[?25l') # no cursor
-    stdout.write('\x1b[H\x1b[2J') # wipe out screen
-    stdout.write((uncut_grass * garden_w)*garden_h)
-    home()
-    save_cursor()
-    stdout.flush()
-
-def mow_right(i):
-    if i > 4:
-        cut_grass()
-    save_cursor()
-    right_mower(i)
-    restore_cursor()
-
-def mow_left(i):
-    if i > 1:
-        cursor_left()
-    save_cursor()
-    left_mower(i)
-    if i > 4:
-        cut_grass()
-    restore_cursor()
-
-
-def mow_lawn():
-    for j in range(garden_h):
-        for i in range(garden_w + mower_size + 1):
-            if j%2 == 0:
-                mow_right(i)
+    def left_mower(self,i=4):
+        if i >= 4 and i <= self.garden_w:
+            if not self.colors:
+                mower = '.=.’'
             else:
-                mow_left(i)
-            stdout.flush()
-            sleep(delay)
-        cursor_down()
+                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.’'
+        elif i == self.garden_w + 1:
+            if not self.colors:
+                mower = '=.’'
+            else:
+                mower = '\x1b[1;31m=\x1b[0m.’'
+        elif i == self.garden_w + 2:
+            if not self.colors:
+                mower = '.’'
+            else:
+                mower = '\x1b[0m.’'
+        elif i == self.garden_w + 3:
+            if not self.colors:
+                mower = '’'
+            else:
+                mower = '\x1b[0m’'
+        elif i == self.garden_w + 4 or i == 0:
+            mower = ''
+        elif i == 1:
+            if not self.colors:
+                mower = '.'
+            else:
+                mower = '\x1b[0m.'
+        elif i == 2:
+            if not self.colors:
+                mower = '.='
+            else:
+                mower = '\x1b[0m.\x1b[1;31m='
+        elif i == 3:
+            if not self.colors:
+                mower = '.=.'
+            else:
+                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.'
+        stdout.write(mower)
+
+
+    def cut_grass(self):
+        if self.miss_percentage == 0 or randint(0,100) > self.miss_percentage:
+            g = self.grass
+        else:
+            g = self.uncut_grass
+        stdout.write(g)
+
+
+    def mow_right(self,i):
+        if i > 4:
+            self.cut_grass()
+        save_cursor()
+        self.right_mower(i)
+        restore_cursor()
+
+    def mow_left(self,i):
+        if i > 1:
+            cursor_left()
+        save_cursor()
+        self.left_mower(i)
+        if i > 4:
+            self.cut_grass()
+        restore_cursor()
+
+    def handle_keypress(self):
+        c = self.scr.getch()
+        if c == -1:
+            return
+        c = chr(c)
+        if c == ' ':
+            if self.delay == self.slow_delay:
+                self.delay = self.speedy_delay
+            else:
+                self.delay = self.slow_delay
+
+    def mow(self):
+        for j in range(self.garden_h):
+            for i in range(self.garden_w + self.mower_size + 1):
+                if j%2 == 0:
+                    self.mow_right(i)
+                else:
+                    self.mow_left(i)
+                stdout.flush()
+                self.handle_keypress()
+                sleep(self.delay)
+                self.handle_keypress()
+            cursor_down()
+
 
 if __name__ == '__main__':
     try:
-        init()
-        mow_lawn()
+        l = 0
+        l = lawn(slow_delay,speedy_delay,colors,miss_percentage)
+        l.mow()
+        l.deinit()
     except:
-        stdout.write('\x1b[?25h\x1b[H\x1b[2J')
+        if l:
+            l.deinit()
+        else:
+            curses.endwin()
+            stdout.write('\x1b[?25h')
