@@ -6,7 +6,7 @@ slow_delay = 0.5    # time in seconds to mow a ; in slow mode (default mode)
 speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
 delay = slow_delay
 colors = True # true or false, no color themes yet
-miss_percentage = 1 # percentage of grass that the mower will not cut properly
+miss_percentage = .3 # percentage of grass that the mower will not cut properly
 
 import curses
 from random import randint
