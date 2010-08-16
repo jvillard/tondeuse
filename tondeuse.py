@@ -7,6 +7,7 @@ speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
 delay = slow_delay
 colors = True # true or false, no color themes yet
 miss_percentage = .3 # percentage of grass that the mower will not cut properly
+wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
 
 import curses
 from random import randint
@@ -181,6 +182,13 @@ class lawn:
                 sleep(self.delay)
                 self.handle_keypress()
             cursor_down()
+
+        if wait_at_the_end:
+            # wait for a keypress when we're done: we don't want the user to miss
+            # on his beautifully mown lawn!
+            self.scr.nodelay(False)
+            self.scr.getch()
+            self.scr.nodelay(True)
 
 
 if __name__ == '__main__':
