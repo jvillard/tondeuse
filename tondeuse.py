@@ -1,13 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# configuration here for maximum user friendship
-slow_delay = 0.5    # time in seconds to mow a ; in slow mode (default mode)
+import getopt
+import sys
+
+def usage():
+    print "Usage: ./tondeuse.py [options]"
+    print "  -s, --slow=DELAY     slow delay"
+    print "  -f, --fast=DELAY    fast delay"
+    print "      --nocolor       self explanatory"
+    print "      --miss=RATE     miss percentage"
+    print "      --nowait        do not wait at the end"
+    
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "s:f:h", ["slow=", "fast=", "nocolor", "miss=","nowait"])
+except getopt.GetoptError, err:
+    # print help information and exit:
+    print str(err) # will print something like "option -a not recognized"
+    usage()
+    sys.exit(2)
+        
+slow_delay = 0.5 # time in seconds to mow a ; in slow mode (default mode)
 speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
-delay = slow_delay
-colors = True # true or false, no color themes yet
-miss_percentage = .3 # percentage of grass that the mower will not cut properly
+
+colors = True
+miss_percentage = 30
 wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
+
+for o,a in opts:
+    if o in ("-s", "--slow"):
+        slow_delay = float(a)
+    elif o in ("-f", "--fast"):
+        speedy_delay = float(a)
+    elif o in ("-h"):
+        usage()
+        sys.exit(0)
+    elif o in ("--nocolor"):
+        colors = False
+    elif o in ("--miss="):
+        miss_percentage = float(a)
+    elif o in ("--nowait"):
+        wait_at_the_end = False
+        
 
 import curses
 from random import randint
