@@ -9,7 +9,7 @@ def usage():
     print "  -s, --slow=DELAY     slow delay"
     print "  -f, --fast=DELAY    fast delay"
     print "      --nocolor       self explanatory"
-    print "      --miss=RATE     miss percentage"
+    print "      --miss=RATE     miss per myriad"
     print "      --nowait        do not wait at the end"
     
 try:
@@ -24,7 +24,7 @@ slow_delay = 0.5 # time in seconds to mow a ; in slow mode (default mode)
 speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
 
 colors = True
-miss_percentage = 30
+miss_permyriad = 30
 wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
 
 for o,a in opts:
@@ -38,7 +38,7 @@ for o,a in opts:
     elif o in ("--nocolor"):
         colors = False
     elif o in ("--miss="):
-        miss_percentage = float(a)
+        miss_permyriad = float(a)
     elif o in ("--nowait"):
         wait_at_the_end = False
         
@@ -65,12 +65,12 @@ def cursor_down(): stdout.write('\x1b[B')
 
 
 class lawn:
-    def __init__(self,slow_delay,speedy_delay,colors,miss_percentage):
+    def __init__(self,slow_delay,speedy_delay,colors,miss_permyriad):
         self.slow_delay = slow_delay
         self.speedy_delay = speedy_delay
         self.delay = slow_delay
         self.colors = colors
-        self.miss_percentage = miss_percentage
+        self.miss_permyriad = miss_permyriad
 
         (self.garden_w, self.garden_h) = terminal_size()
         self.mower_size = 4
@@ -170,7 +170,7 @@ class lawn:
 
 
     def cut_grass(self):
-        if self.miss_percentage == 0 or randint(0,100) > self.miss_percentage:
+        if self.miss_permyriad == 0 or randint(0,10000) > self.miss_permyriad:
             g = self.grass
         else:
             g = self.uncut_grass
@@ -228,7 +228,7 @@ class lawn:
 if __name__ == '__main__':
     try:
         l = 0
-        l = lawn(slow_delay,speedy_delay,colors,miss_percentage)
+        l = lawn(slow_delay,speedy_delay,colors,miss_permyriad)
         l.mow()
         l.deinit()
     except:
