@@ -97,24 +97,24 @@ class lawn:
     def left_mower(self,i=4):
         if i >= 4 and i <= self.garden_w:
             if not self.colors:
-                mower = '.=.’'
+                mower = '.=.\''
             else:
-                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.’'
+                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.\''
         elif i == self.garden_w + 1:
             if not self.colors:
-                mower = '=.’'
+                mower = '=.\''
             else:
-                mower = '\x1b[1;31m=\x1b[0m.’'
+                mower = '\x1b[1;31m=\x1b[0m.\''
         elif i == self.garden_w + 2:
             if not self.colors:
-                mower = '.’'
+                mower = '.\''
             else:
-                mower = '\x1b[0m.’'
+                mower = '\x1b[0m.\''
         elif i == self.garden_w + 3:
             if not self.colors:
-                mower = '’'
+                mower = '\''
             else:
-                mower = '\x1b[0m’'
+                mower = '\x1b[0m\''
         elif i == self.garden_w + 4 or i == 0:
             mower = ''
         elif i == 1:
