@@ -115,16 +115,18 @@ class lawn:
         else:
             self.scr.addstr(y, x, self.grass,self.grass_attr)
 
-    def handle_keypress(self):
+    def handle_events(self):
         c = self.scr.getch()
         if c == -1:
             return
-        c = chr(c)
-        if c == ' ':
-            if self.delay == self.slow_delay:
-                self.delay = self.speedy_delay
-            else:
-                self.delay = self.slow_delay
+        
+        if 0 <= c < 256:
+            c = chr(c)
+            if c == ' ':
+                if self.delay == self.slow_delay:
+                    self.delay = self.speedy_delay
+                else:
+                    self.delay = self.slow_delay
 
     def mow(self):
         for y in range(self.garden_h):
@@ -144,9 +146,9 @@ class lawn:
                     self.mow_grass(y,xx + self.mower_size + 1)
                 self.scr.refresh(0, self.mower_size + 1,
                                  0, 0, self.garden_h -1, self.garden_w -1)
-                self.handle_keypress()
+                self.handle_events()
                 sleep(self.delay)
-                self.handle_keypress()
+                self.handle_events()
         if self.wait_at_the_end:
             # wait for a keypress when we're done: we don't want the user to
             # miss on her beautifully mown lawn!
