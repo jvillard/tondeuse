@@ -1,24 +1,60 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# configuration here for maximum user friendship
-slow_delay = 0.5    # time in seconds to mow a ; in slow mode (default mode)
+import getopt
+import sys
+
+def usage():
+    print "Usage: ./tondeuse.py [options]"
+    print "  -s, --slow=DELAY     slow delay"
+    print "  -f, --fast=DELAY    fast delay"
+    print "      --nocolor       self explanatory"
+    print "      --miss=RATE     miss per myriad"
+    print "      --nowait        do not wait at the end"
+    
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "s:f:h", ["slow=", "fast=", "nocolor", "miss=","nowait"])
+except getopt.GetoptError, err:
+    # print help information and exit:
+    print str(err) # will print something like "option -a not recognized"
+    usage()
+    sys.exit(2)
+        
+slow_delay = 0.5 # time in seconds to mow a ; in slow mode (default mode)
 speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
-delay = slow_delay
-colors = True # true or false, no color themes yet
-miss_percentage = .3 # percentage of grass that the mower will not cut properly
+
+colors = True
+miss_permyriad = 30
+wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
+
+for o,a in opts:
+    if o in ("-s", "--slow"):
+        slow_delay = float(a)
+    elif o in ("-f", "--fast"):
+        speedy_delay = float(a)
+    elif o in ("-h"):
+        usage()
+        sys.exit(0)
+    elif o in ("--nocolor"):
+        colors = False
+    elif o in ("--miss="):
+        miss_permyriad = float(a)
+    elif o in ("--nowait"):
+        wait_at_the_end = False
+        
 
 import curses
 from random import randint
 from time import sleep
 
 class lawn:
-    def __init__(self,win,slow_delay,speedy_delay,colors,miss_percentage):
+    def __init__(self,win,slow_delay,speedy_delay,colors,miss_permyriad,wait):
         self.slow_delay = slow_delay
         self.speedy_delay = speedy_delay
         self.delay = slow_delay
         self.colors = colors
-        self.miss_percentage = miss_percentage
+        self.miss_permyriad = miss_permyriad
+        self.wait_at_the_end = wait
 
         (self.garden_h, self.garden_w) = win.getmaxyx()
         self.mower_size = 4
@@ -74,7 +110,7 @@ class lawn:
 
     def mow_grass(self,y,x):
         # paints a blade of mowed grass if the mowing succeeds
-        if self.miss_percentage == 0 or randint(0,100) > self.miss_percentage:
+        if self.miss_permyriad == 0 or randint(0,10000) > self.miss_permyriad:
             self.scr.addstr(y, x, self.cut_grass,self.cut_grass_attr)
         else:
             self.scr.addstr(y, x, self.grass,self.grass_attr)
@@ -111,9 +147,15 @@ class lawn:
                 self.handle_keypress()
                 sleep(self.delay)
                 self.handle_keypress()
-                
+        if self.wait_at_the_end:
+            # wait for a keypress when we're done: we don't want the user to
+            # miss on her beautifully mown lawn!
+            self.scr.nodelay(False)
+            self.scr.getch()
+            self.scr.nodelay(True)
+
 def start(win):
-    l = lawn(win,slow_delay,speedy_delay,colors,miss_percentage)
+    l = lawn(win,slow_delay,speedy_delay,colors,miss_permyriad,wait_at_the_end)
     l.mow()
 
 if __name__ == '__main__':
