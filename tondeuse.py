@@ -10,153 +10,74 @@ miss_percentage = .3 # percentage of grass that the mower will not cut properly
 
 import curses
 from random import randint
-from sys import stdout
 from time import sleep
 
-# snippet from the internets
-def terminal_size():
-    import fcntl, termios, struct
-    h, w, hp, wp = struct.unpack('HHHH',
-        fcntl.ioctl(0, termios.TIOCGWINSZ,
-        struct.pack('HHHH', 0, 0, 0, 0)))
-    return w, h
-# /snippet
-
-def home(): stdout.write('\x1b[H')
-def save_cursor(): stdout.write('\x1b[s')
-def restore_cursor(): stdout.write('\x1b[u')
-def cursor_left(): stdout.write('\x1b[D')
-def cursor_down(): stdout.write('\x1b[B')
-
-
 class lawn:
-    def __init__(self,slow_delay,speedy_delay,colors,miss_percentage):
+    def __init__(self,win,slow_delay,speedy_delay,colors,miss_percentage):
         self.slow_delay = slow_delay
         self.speedy_delay = speedy_delay
         self.delay = slow_delay
         self.colors = colors
         self.miss_percentage = miss_percentage
 
-        (self.garden_w, self.garden_h) = terminal_size()
+        (self.garden_h, self.garden_w) = win.getmaxyx()
         self.mower_size = 4
+        # the drawing pad is the screen
+        # + room for the mower to go beyond the screen on the left and right
+        # + room for one blade of cut grass (behind the mower) on each side
+        self.scr = curses.newpad(self.garden_h +1,
+                                 self.garden_w + 2*self.mower_size + 2)
 
-        self.uncut_grass = ';'
-        if self.colors:
-            self.uncut_grass = '\x1b[1;32m' + self.uncut_grass
+        self.grass = ';'
+        self.cut_grass = ','
 
-        self.grass = ','
-        if self.colors:
-            self.grass = '\x1b[0;32m' + self.grass
-        
-        # init curses
-        self.scr = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        self.scr.nodelay(True)
-        stdout.flush()
-        
-        # print entire, untrimmed garden and return to top-left corner and save position
-        stdout.write('\x1b[?25l') # no cursor
-        stdout.write('\x1b[H\x1b[2J') # wipe out screen
-        stdout.write(self.uncut_grass)
-        # replaces stdout.write((self.uncut_grass * self.garden_w)*self.garden_h)
-        # which mysteriously doesn't work with curses
-        self.scr.bkgd(ord(';'),curses.COLOR_GREEN)
-        home()
-        save_cursor()
-        stdout.flush()
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
 
-
-    def deinit(self):
-        curses.endwin()
-        stdout.write('\x1b[?25h')
-
-
-    def right_mower(self,i=4):
-        if not self.colors:
-            mower = '`.=.'[max(0,4-i):self.garden_w + 4 - i]
-        elif i >= 4 and i <= self.garden_w:
-            mower = '\x1b[0m`.\x1b[1;31m=\x1b[0m.'
-        elif i == self.garden_w + 1:
-            mower = '\x1b[0m`.\x1b[1;31m='
-        elif i == self.garden_w + 2:
-            mower = '\x1b[0m`.'
-        elif i == self.garden_w + 3:
-            mower = '\x1b[0m`'
-        elif i == self.garden_w + 4 or i == 0:
-            mower = ''
-        elif i == 1:
-            mower = '\x1b[0m.'
-        elif i == 2:
-            mower = '\x1b[1;31m=\x1b[0m.'
-        elif i == 3:
-            mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.'
-        stdout.write(mower)
-
-    def left_mower(self,i=4):
-        if i >= 4 and i <= self.garden_w:
-            if not self.colors:
-                mower = '.=.’'
-            else:
-                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.’'
-        elif i == self.garden_w + 1:
-            if not self.colors:
-                mower = '=.’'
-            else:
-                mower = '\x1b[1;31m=\x1b[0m.’'
-        elif i == self.garden_w + 2:
-            if not self.colors:
-                mower = '.’'
-            else:
-                mower = '\x1b[0m.’'
-        elif i == self.garden_w + 3:
-            if not self.colors:
-                mower = '’'
-            else:
-                mower = '\x1b[0m’'
-        elif i == self.garden_w + 4 or i == 0:
-            mower = ''
-        elif i == 1:
-            if not self.colors:
-                mower = '.'
-            else:
-                mower = '\x1b[0m.'
-        elif i == 2:
-            if not self.colors:
-                mower = '.='
-            else:
-                mower = '\x1b[0m.\x1b[1;31m='
-        elif i == 3:
-            if not self.colors:
-                mower = '.=.'
-            else:
-                mower = '\x1b[0m.\x1b[1;31m=\x1b[0m.'
-        stdout.write(mower)
-
-
-    def cut_grass(self):
-        if self.miss_percentage == 0 or randint(0,100) > self.miss_percentage:
-            g = self.grass
+        self.normal_attr = curses.color_pair(1)
+        if colors:
+            self.grass_attr = curses.color_pair(2)
+            self.cut_grass_attr = curses.color_pair(2) | curses.A_DIM
+            self.motor_attr = curses.color_pair(3) | curses.A_BOLD
         else:
-            g = self.uncut_grass
-        stdout.write(g)
+            self.grass_attr = self.normal_attr
+            self.cut_grass_attr = self.normal_attr
+            self.motor_attr = self.normal_attr
 
+        # init curses
+        curses.curs_set(0) # invisible cursor
+        self.scr.nodelay(True) # non-blocking getch()
 
-    def mow_right(self,i):
-        if i > 4:
-            self.cut_grass()
-        save_cursor()
-        self.right_mower(i)
-        restore_cursor()
+        # paint unmowed lawn
+        self.scr.bkgd(ord(self.grass),self.grass_attr)
+        self.scr.refresh(0, self.mower_size + 1,
+                         0, 0, self.garden_h -1, self.garden_w -1)
 
-    def mow_left(self,i):
-        if i > 1:
-            cursor_left()
-        save_cursor()
-        self.left_mower(i)
-        if i > 4:
-            self.cut_grass()
-        restore_cursor()
+    def right_mower(self,y,x):
+        # paints the mower going from left to right
+        # (y,x) is the position of the blade of grass directly in front of the
+        # mower, that is, directly to its right
+        self.scr.addstr(y, x - 4, '`',self.normal_attr)
+        self.scr.addstr(y, x - 3, '.',self.normal_attr)
+        self.scr.addstr(y, x - 2, '=',self.motor_attr)
+        self.scr.addstr(y, x - 1, '.',self.normal_attr)
+
+    def left_mower(self,y,x):
+        # paints the mower going from right to left
+        # (y,x) is the position of the blade of grass directly in front of the
+        # mower, that is, directly to its left
+        self.scr.addstr(y, x + 1, '.',self.normal_attr)
+        self.scr.addstr(y, x + 2, '=',self.motor_attr)
+        self.scr.addstr(y, x + 3, '.',self.normal_attr)
+        self.scr.addstr(y, x + 4, '\'',self.normal_attr)
+
+    def mow_grass(self,y,x):
+        # paints a blade of mowed grass if the mowing succeeds
+        if self.miss_percentage == 0 or randint(0,100) > self.miss_percentage:
+            self.scr.addstr(y, x, self.cut_grass,self.cut_grass_attr)
+        else:
+            self.scr.addstr(y, x, self.grass,self.grass_attr)
 
     def handle_keypress(self):
         c = self.scr.getch()
@@ -170,28 +91,30 @@ class lawn:
                 self.delay = self.slow_delay
 
     def mow(self):
-        for j in range(self.garden_h):
-            for i in range(self.garden_w + self.mower_size + 1):
-                if j%2 == 0:
-                    self.mow_right(i)
+        for y in range(self.garden_h):
+            # x ranges for the entire width of the screen + space to park the
+            # mower and one blade of cut grass
+            for x in range(self.garden_w + self.mower_size + 1):
+                # (y,xx) is the position of the blade of grass directly in front
+                # of the mower
+                if y%2 == 0:
+                    xx = x + self.mower_size + 1
+                    self.mow_grass(y,xx - (self.mower_size + 1))
+                    self.right_mower(y,xx)
                 else:
-                    self.mow_left(i)
-                stdout.flush()
+                    xx = (self.garden_w + 2*self.mower_size + 1) \
+                        - x - (self.mower_size + 1)
+                    self.left_mower(y,xx)
+                    self.mow_grass(y,xx + self.mower_size + 1)
+                self.scr.refresh(0, self.mower_size + 1,
+                                 0, 0, self.garden_h -1, self.garden_w -1)
                 self.handle_keypress()
                 sleep(self.delay)
                 self.handle_keypress()
-            cursor_down()
-
+                
+def start(win):
+    l = lawn(win,slow_delay,speedy_delay,colors,miss_percentage)
+    l.mow()
 
 if __name__ == '__main__':
-    try:
-        l = 0
-        l = lawn(slow_delay,speedy_delay,colors,miss_percentage)
-        l.mow()
-        l.deinit()
-    except:
-        if l:
-            l.deinit()
-        else:
-            curses.endwin()
-            stdout.write('\x1b[?25h')
+    curses.wrapper(start) # this performs curses initialisation & catches errors
