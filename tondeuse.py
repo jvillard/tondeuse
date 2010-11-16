@@ -5,15 +5,16 @@ import getopt
 import sys
 
 def usage():
-    print "Usage: ./tondeuse.py [options]"
-    print "  -s, --slow=DELAY     slow delay"
-    print "  -f, --fast=DELAY    fast delay"
-    print "      --nocolor       self explanatory"
-    print "      --miss=RATE     miss per myriad"
-    print "      --nowait        do not wait at the end"
+    print 'Usage: ./tondeuse.py [options]'
+    print '  -s, --slow=DELAY     slow delay'
+    print '  -f, --fast=DELAY    fast delay'
+    print '      --nocolor       self explanatory'
+    print '      --miss=RATE     miss per myriad'
+    print '      --nowait        do not wait at the end'
+    print '  -i, --nointerrupt   Ctrl+C is not your friend anymore'
     
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "s:f:h", ["slow=", "fast=", "nocolor", "miss=","nowait"])
+    opts, args = getopt.getopt(sys.argv[1:], 's:f:ih', ['slow=', 'fast=', 'nocolor', 'miss=','nowait','nointerrupt'])
 except getopt.GetoptError, err:
     # print help information and exit:
     print str(err) # will print something like "option -a not recognized"
@@ -26,21 +27,24 @@ speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
 colors = True
 miss_permyriad = 30
 wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
+catch_sigint = False # catch sigint so that no one can stop the mowing?
 
 for o,a in opts:
-    if o in ("-s", "--slow"):
+    if o in ('-s', '--slow'):
         slow_delay = float(a)
-    elif o in ("-f", "--fast"):
+    elif o in ('-f', '--fast'):
         speedy_delay = float(a)
-    elif o in ("-h"):
+    elif o in ('-h'):
         usage()
         sys.exit(0)
-    elif o in ("--nocolor"):
+    elif o in ('--nocolor'):
         colors = False
-    elif o in ("--miss="):
+    elif o in ('--miss='):
         miss_permyriad = float(a)
-    elif o in ("--nowait"):
+    elif o in ('--nowait'):
         wait_at_the_end = False
+    elif o in ('-i','--nointerrupt'):
+        catch_sigint = True
         
 
 import curses
@@ -57,6 +61,9 @@ class lawn:
         self.colors = colors
         self.miss_permyriad = miss_permyriad
         self.wait_at_the_end = wait
+
+        if catch_sigint:
+            signal.signal(signal.SIGINT, lambda x,y: ())
 
         self.grass = ';'
         self.cut_grass = ','
