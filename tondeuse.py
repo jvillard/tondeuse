@@ -207,7 +207,8 @@ class lawn:
                 time.sleep(.04)
 
     def earthquake(self):
-        sys.stderr.write('resize\n')
+        # DEBUGME: uncomment below
+        # sys.stderr.write('resize\n')
         # The terminal has been resized! Take action.
         (old_h, old_w) = (self.garden_h, self.garden_w)
         (old_x, old_y) = (self.x, self.y)
