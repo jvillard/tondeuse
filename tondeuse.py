@@ -94,7 +94,7 @@ class lawn:
         curses.curs_set(0) # invisible cursor
 
     def init_lawn(self):
-        # create a pad for drawing into and puts it on the terminal
+        '''create a pad for drawing into and apply it on the terminal'''
 
         # the drawing pad is the screen
         # + room for the mower to go beyond the screen on the left and right
@@ -105,7 +105,8 @@ class lawn:
         self.scr.nodelay(True) # non-blocking getch()
 
     def right_mower(self,y,x):
-        # paint the mower going from left to right
+        '''paint the mower going from left to right'''
+        
         # (y,x) is the position of the blade of grass directly in front of the
         # mower, that is, directly to its right
         self.scr.addstr(y, x - 4, '`', self.normal_attr)
@@ -114,7 +115,8 @@ class lawn:
         self.scr.addstr(y, x - 1, '.', self.normal_attr)
 
     def left_mower(self,y,x):
-        # paint the mower going from right to left
+        '''paint the mower going from right to left'''
+        
         # (y,x) is the position of the blade of grass directly in front of the
         # mower, that is, directly to its left
         self.scr.addstr(y, x + 1, '.', self.normal_attr)
@@ -123,7 +125,8 @@ class lawn:
         self.scr.addstr(y, x + 4, '\'', self.normal_attr)
 
     def mow_grass(self,y,x):
-        # paint a blade of mowed grass if the mowing succeeds
+        '''paint a blade of mowed grass if the mowing succeeds'''
+        
         if self.miss_permyriad == 0 or randint(0,10000) > self.miss_permyriad:
             self.scr.addstr(y, x, self.cut_grass, self.cut_grass_attr)
         else:
@@ -207,9 +210,10 @@ class lawn:
                 time.sleep(.04)
 
     def earthquake(self):
+        '''The terminal has been resized! Take action.'''
+
         # DEBUGME: uncomment below
         # sys.stderr.write('resize\n')
-        # The terminal has been resized! Take action.
         (old_h, old_w) = (self.garden_h, self.garden_w)
         (old_x, old_y) = (self.x, self.y)
         old_scr = self.scr
@@ -260,6 +264,8 @@ class lawn:
         
     def refresh_screen(self):
         (h, w) = self.term.getmaxyx()
+        # warning: race condition! h & w might change before we call refresh.
+        # this might cause curses to crash (?). oh, well...
         self.scr.refresh(0, self.mower_size + 1,
                          0, 0,
                          min(self.garden_h, h) - 1, min(self.garden_w, w) - 1)
