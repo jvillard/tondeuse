@@ -14,7 +14,9 @@ def usage():
     print '  -i, --nointerrupt   Ctrl+C is not your friend anymore'
     
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 's:f:ih', ['slow=', 'fast=', 'nocolor', 'miss=','nowait','nointerrupt'])
+    opts, args = getopt.getopt(sys.argv[1:], 's:f:ih',
+                               ['slow=', 'fast=', 'nocolor', 'miss=','nowait',
+                                'nointerrupt'])
 except getopt.GetoptError, err:
     # print help information and exit:
     print str(err) # will print something like "option -a not recognized"
@@ -22,7 +24,7 @@ except getopt.GetoptError, err:
     sys.exit(2)
         
 slow_delay = 0.5 # time in seconds to mow a ; in slow mode (default mode)
-speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
+fast_delay = 0.05 # time in seconds to mow a ; in fast mode
 
 colors = True
 miss_permyriad = 0 # be a perfect mower by default
@@ -33,7 +35,7 @@ for o,a in opts:
     if o in ('-s', '--slow'):
         slow_delay = float(a)
     elif o in ('-f', '--fast'):
-        speedy_delay = float(a)
+        fast_delay = float(a)
     elif o in ('-h'):
         usage()
         sys.exit(0)
@@ -53,10 +55,10 @@ import signal
 import time
 
 class lawn:
-    def __init__(self,win,slow_delay,speedy_delay,colors,miss_permyriad,wait):
+    def __init__(self,win,slow_delay,fast_delay,colors,miss_permyriad,wait):
         self.term = win
         self.slow_delay = slow_delay
-        self.speedy_delay = speedy_delay
+        self.fast_delay = fast_delay
         self.delay = slow_delay
         self.colors = colors
         self.miss_permyriad = miss_permyriad
@@ -140,7 +142,7 @@ class lawn:
         
         if c == ord(' '):
             if self.delay == self.slow_delay:
-                self.delay = self.speedy_delay
+                self.delay = self.fast_delay
             else:
                 self.delay = self.slow_delay
             self.ticks = 0
@@ -230,7 +232,7 @@ class lawn:
                 self.mow_grass(y, x + self.mower_size)
 
         if self.y > self.garden_h:
-            # if we're passed the bottom of the screen, refresh and call it a day
+            # we're passed the bottom of the screen; refresh and call it a day
             self.refresh_screen()
             return
 
@@ -250,7 +252,7 @@ class lawn:
                          0, 0, self.garden_h -1, self.garden_w -1)
 
 def start(win):
-    l = lawn(win,slow_delay,speedy_delay,colors,miss_permyriad,wait_at_the_end)
+    l = lawn(win,slow_delay,fast_delay,colors,miss_permyriad,wait_at_the_end)
     l.mow()
 
 if __name__ == '__main__':
