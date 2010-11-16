@@ -187,11 +187,7 @@ class lawn:
             if self.y > self.garden_h:
                 finished = True
         
-        self.epilogue()
-
-    def epilogue(self):
         # We're done mowing.
-
         if self.wait_at_the_end:
             # wait for a keypress when we're done: we don't want the user to
             # miss on her beautifully mown lawn!
