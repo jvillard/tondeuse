@@ -138,6 +138,10 @@ class lawn:
             self.earthquake()
         
         if c == ord(' '):
+            if self.finished:
+                # little hack to allow to quit on space after mowing the
+                # entire lawn
+                return True
             if self.delay == self.slow_delay:
                 self.delay = self.fast_delay
             else:
@@ -149,11 +153,11 @@ class lawn:
         # (self.y, self.x) is the position of the blade of grass
         # directly in front of the mower inside the pad
         (self.y, self.x) = (0, self.mower_size + 1)
-        finished = False
+        self.finished = False
         self.t0 = time.time()
         self.ticks = 0
 
-        while not finished:
+        while not self.finished:
             # DEBUGME: uncomment below
             # sys.stderr.write('yhxw = (%d/%d, %d/%d)\n' %
             #                  (self.y, self.garden_h, self.x, self.garden_w))
@@ -168,14 +172,11 @@ class lawn:
             # tick
             t = time.time()
             while (t - self.t0 < self.delay * self.ticks):
+                curses.doupdate() # needed to trigger resize events
                 self.handle_events()
                 # sleep for at most .04s at a time so that resize is not too
                 # laggy
-                # FIXME: this does not seem to help... it looks like curses
-                #        is holding back the notification until the screen is
-                #        refreshed for some reason... Refreshing here makes
-                #        curses crash if the window is resized...
-                time.sleep(min(self.delay * self.ticks - (t - self.t0),0.04))
+                time.sleep(min(self.delay * self.ticks - (t - self.t0), .04))
                 t = time.time()
             self.handle_events()
             self.refresh_screen()
@@ -194,23 +195,28 @@ class lawn:
                 self.y = self.y + 1
                 self.x = self.mower_size + 1
             if self.y >= self.garden_h:
-                finished = True
+                self.finished = True
         
         # We're done mowing.
         if self.wait_at_the_end:
             # wait for a keypress when we're done: we don't want the user to
             # miss on her beautifully mown lawn!
-            self.scr.nodelay(False)
-            while (self.scr.getch() != ord(' ')): pass
-            self.scr.nodelay(True)
+            # sleep a bit in-between not to hog the cpu
+            while not self.handle_events():
+                curses.doupdate() # needed to trigger resize events
+                time.sleep(.04)
 
     def earthquake(self):
+        sys.stderr.write('resize\n')
         # The terminal has been resized! Take action.
         (old_h, old_w) = (self.garden_h, self.garden_w)
-        old_x = self.x
+        (old_x, old_y) = (self.x, self.y)
         old_scr = self.scr
         
         (self.garden_h, self.garden_w) = self.term.getmaxyx()
+        if self.y >= self.garden_h or self.finished:
+            self.finished = True
+            self.y = self.garden_h
         if self.y % 2 == 0:
             self.x = min(old_x, self.garden_w + 2*self.mower_size +1)
         else:
@@ -227,29 +233,35 @@ class lawn:
         # be careful not to re-draw mowed lawn that is already on screen,
         # especially since the new positions of mismowed blades of grass will
         # probably not match those of the old ones.
-        for y in range(min(self.y, self.garden_h + 1)):
-            for x in range(old_w, self.garden_w + 1):
+        for y in range(self.y):
+            for x in range(old_w + 1, self.garden_w + 1):
                 self.mow_grass(y, x + self.mower_size)
 
-        if self.y >= self.garden_h:
-            # we're passed the bottom of the screen; refresh and call it a day
-            self.refresh_screen()
-            return
-
-        if self.y % 2 == 1:
-            for x in range(old_x, self.garden_w + 1):
-                self.mow_grass(self.y, x + self.mower_size)
-        
-        if self.y % 2 == 0:
-            self.right_mower(self.y, self.x)
+        if self.finished:
+            # draw the rest of the screen as freshly cut grass
+            for y in range(old_y, self.y):
+                for x in range(self.garden_w + 1):
+                    self.mow_grass(y, x + self.mower_size)
         else:
-            self.left_mower(self.y, self.x)
+            # complete the current row with freshly cut grass if the mower
+            # was on its way to the left of the screen
+            if self.y % 2 == 1:
+                for x in range(old_x, self.garden_w + 1):
+                    self.mow_grass(self.y, x + self.mower_size)
+            
+            # draw the mower in case its position has changed
+            if self.y % 2 == 0:
+                self.right_mower(self.y, self.x)
+            else:
+                self.left_mower(self.y, self.x)
 
         self.refresh_screen()
         
     def refresh_screen(self):
+        (h, w) = self.term.getmaxyx()
         self.scr.refresh(0, self.mower_size + 1,
-                         0, 0, self.garden_h - 1, self.garden_w - 1)
+                         0, 0,
+                         min(self.garden_h, h) - 1, min(self.garden_w, w) - 1)
 
 def start(win):
     if catch_sigint:
