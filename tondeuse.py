@@ -25,7 +25,7 @@ slow_delay = 0.5 # time in seconds to mow a ; in slow mode (default mode)
 speedy_delay = 0.05 # time in seconds to mow a ; in fast mode
 
 colors = True
-miss_permyriad = 30
+miss_permyriad = 0 # be a perfect mower by default
 wait_at_the_end = True # shall we wait for a keypress once the lawn is mown?
 catch_sigint = False # catch sigint so that no one can stop the mowing?
 
