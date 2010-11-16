@@ -64,9 +64,6 @@ class lawn:
         self.miss_permyriad = miss_permyriad
         self.wait_at_the_end = wait
 
-        if catch_sigint:
-            signal.signal(signal.SIGINT, lambda x,y: ())
-
         self.grass = ';'
         self.cut_grass = ','
 
@@ -102,7 +99,7 @@ class lawn:
         # the drawing pad is the screen
         # + room for the mower to go beyond the screen on the left and right
         # + room for one blade of cut grass (behind the mower) on each side
-        self.scr = curses.newpad(self.garden_h +1,
+        self.scr = curses.newpad(self.garden_h + 1,
                                  self.garden_w + 2*self.mower_size + 2)
 
         self.scr.nodelay(True) # non-blocking getch()
@@ -111,26 +108,26 @@ class lawn:
         # paint the mower going from left to right
         # (y,x) is the position of the blade of grass directly in front of the
         # mower, that is, directly to its right
-        self.scr.addstr(y, x - 4, '`',self.normal_attr)
-        self.scr.addstr(y, x - 3, '.',self.normal_attr)
-        self.scr.addstr(y, x - 2, '=',self.motor_attr)
-        self.scr.addstr(y, x - 1, '.',self.normal_attr)
+        self.scr.addstr(y, x - 4, '`', self.normal_attr)
+        self.scr.addstr(y, x - 3, '.', self.normal_attr)
+        self.scr.addstr(y, x - 2, '=', self.motor_attr)
+        self.scr.addstr(y, x - 1, '.', self.normal_attr)
 
     def left_mower(self,y,x):
         # paint the mower going from right to left
         # (y,x) is the position of the blade of grass directly in front of the
         # mower, that is, directly to its left
-        self.scr.addstr(y, x + 1, '.',self.normal_attr)
-        self.scr.addstr(y, x + 2, '=',self.motor_attr)
-        self.scr.addstr(y, x + 3, '.',self.normal_attr)
-        self.scr.addstr(y, x + 4, '\'',self.normal_attr)
+        self.scr.addstr(y, x + 1, '.', self.normal_attr)
+        self.scr.addstr(y, x + 2, '=', self.motor_attr)
+        self.scr.addstr(y, x + 3, '.', self.normal_attr)
+        self.scr.addstr(y, x + 4, '\'', self.normal_attr)
 
     def mow_grass(self,y,x):
         # paint a blade of mowed grass if the mowing succeeds
         if self.miss_permyriad == 0 or randint(0,10000) > self.miss_permyriad:
-            self.scr.addstr(y, x, self.cut_grass,self.cut_grass_attr)
+            self.scr.addstr(y, x, self.cut_grass, self.cut_grass_attr)
         else:
-            self.scr.addstr(y, x, self.grass,self.grass_attr)
+            self.scr.addstr(y, x, self.grass, self.grass_attr)
 
     def handle_events(self):
         c = self.scr.getch()
@@ -157,13 +154,16 @@ class lawn:
         self.ticks = 0
 
         while not finished:
+            # DEBUGME: uncomment below
+            # sys.stderr.write('yhxw = (%d/%d, %d/%d)\n' %
+            #                  (self.y, self.garden_h, self.x, self.garden_w))
             # mow some grass
             if self.y % 2 == 0:
                 self.mow_grass(self.y, self.x - (self.mower_size + 1))
-                self.right_mower(self.y,self.x)
+                self.right_mower(self.y, self.x)
             else:
                 self.mow_grass(self.y, self.x + self.mower_size + 1)
-                self.left_mower(self.y,self.x)
+                self.left_mower(self.y, self.x)
 
             # tick
             t = time.time()
@@ -193,7 +193,7 @@ class lawn:
             elif self.y % 2 == 1 and self.x < 0:
                 self.y = self.y + 1
                 self.x = self.mower_size + 1
-            if self.y > self.garden_h:
+            if self.y >= self.garden_h:
                 finished = True
         
         # We're done mowing.
@@ -231,7 +231,7 @@ class lawn:
             for x in range(old_w, self.garden_w + 1):
                 self.mow_grass(y, x + self.mower_size)
 
-        if self.y > self.garden_h:
+        if self.y >= self.garden_h:
             # we're passed the bottom of the screen; refresh and call it a day
             self.refresh_screen()
             return
@@ -249,9 +249,12 @@ class lawn:
         
     def refresh_screen(self):
         self.scr.refresh(0, self.mower_size + 1,
-                         0, 0, self.garden_h -1, self.garden_w -1)
+                         0, 0, self.garden_h - 1, self.garden_w - 1)
 
 def start(win):
+    if catch_sigint:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+    
     l = lawn(win,slow_delay,fast_delay,colors,miss_permyriad,wait_at_the_end)
     l.mow()
 
