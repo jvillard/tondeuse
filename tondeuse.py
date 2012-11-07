@@ -6,7 +6,7 @@ import sys
 
 def usage():
     print 'Usage: ./tondeuse.py [options]'
-    print '  -s, --slow=DELAY     slow delay'
+    print '  -s, --slow=DELAY    slow delay'
     print '  -f, --fast=DELAY    fast delay'
     print '      --nocolor       self explanatory'
     print '      --miss=RATE     miss per myriad'
