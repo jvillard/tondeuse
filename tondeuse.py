@@ -1,25 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import getopt
 import sys
 
 def usage():
-    print 'Usage: ./tondeuse.py [options]'
-    print '  -s, --slow=DELAY    slow delay'
-    print '  -f, --fast=DELAY    fast delay'
-    print '      --nocolor       self explanatory'
-    print '      --miss=RATE     miss per myriad'
-    print '      --nowait        do not wait at the end'
-    print '  -i, --nointerrupt   Ctrl+C is not your friend anymore'
+    print('Usage: ./tondeuse.py [options]')
+    print('  -s, --slow=DELAY    slow delay')
+    print('  -f, --fast=DELAY    fast delay')
+    print('      --nocolor       self explanatory')
+    print('      --miss=RATE     miss per myriad')
+    print('      --nowait        do not wait at the end')
+    print('  -i, --nointerrupt   Ctrl+C is not your friend anymore')
     
 try:
     opts, args = getopt.getopt(sys.argv[1:], 's:f:ih',
                                ['slow=', 'fast=', 'nocolor', 'miss=','nowait',
                                 'nointerrupt'])
-except getopt.GetoptError, err:
+except (getopt.GetoptError, err):
     # print help information and exit:
-    print str(err) # will print something like "option -a not recognized"
+    print(str(err)) # will print something like "option -a not recognized"
     usage()
     sys.exit(2)
         
